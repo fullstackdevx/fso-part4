@@ -1,0 +1,21 @@
+POST http://localhost:3003/api/blogs
+Content-Type: application/json
+
+{
+    "title": "title 1",
+    "author": "fullstackdevx",
+    "url": "https://fullstackopen.com/",
+    "likes": 2
+}
+
+###
+
+POST http://localhost:3003/api/blogs
+Content-Type: application/json
+
+{
+    "title": "title 2",
+    "author": "lol-pallo",
+    "url": "https://docs.mongodb.com/",
+    "likes": 2
+}
