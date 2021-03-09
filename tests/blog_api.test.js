@@ -83,6 +83,31 @@ test('fails with status code 400, if the title and url are missing from the requ
   expect(blogAtEnd).toHaveLength(helper.initialBlogs.length)
 })
 
+test('a blog can be deleted', async () => {
+  const blogsAtStart = await helper.blogsInDb()
+  const blogToDelete = blogsAtStart[0]
+
+  await api
+    .delete(`/api/blogs/${blogToDelete.id}`)
+    .expect(204)
+
+  const blogsAtEnd = await helper.blogsInDb()
+  expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length - 1)
+
+  const titles = blogsAtEnd.map(blog => blog.title)
+  expect(titles).not.toContain(blogToDelete.title)
+})
+
+test('fails with statuscode 400 if the requeted id is malformatted', async () => {
+  const malformattedId = '1234'
+  await api
+    .delete(`/api/blogs/${malformattedId}`)
+    .expect(400)
+
+  const blogsAtEnd = await helper.blogsInDb()
+  expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length)
+})
+
 afterAll(() => {
   mongoose.connection.close()
 })
