@@ -41,6 +41,17 @@ test('returns the correct amount of blog posts', async () => {
   expect(response.body).toHaveLength(initialBlogs.length)
 })
 
+test('the unique identifier property of the blog posts is named id,', async () => {
+  const response = await api.get('/api/blogs')
+  const firstBlog = response.body[0]
+
+  expect(firstBlog.id).toBeDefined()
+  // expect(firstBlog).toHaveProperty('id')
+  expect(firstBlog._id).toBeUndefined()
+  // expect(firstBlog._id).not.toBeDefined()
+  // expect(firstBlog).not.toHaveProperty('_id')
+})
+
 afterAll(() => {
   mongoose.connection.close()
 })
