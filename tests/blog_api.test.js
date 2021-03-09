@@ -72,10 +72,15 @@ test('if the likes property is missing from the request, it will default to the 
 
 test('fails with status code 400, if the title and url are missing from the request', async () => {
   const newBlog = { author: 'Robert C. Martin' }
+
   await api
     .post('/api/blogs')
     .send(newBlog)
     .expect(400)
+
+  const blogAtEnd = await helper.blogsInDb()
+
+  expect(blogAtEnd).toHaveLength(helper.initialBlogs.length)
 })
 
 afterAll(() => {
