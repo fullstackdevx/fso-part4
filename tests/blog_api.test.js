@@ -38,6 +38,35 @@ test('the unique identifier property of the blog posts is named id,', async () =
   // expect(firstBlog).not.toHaveProperty('_id')
 })
 
+test('a specificic post can be viewed', async () => {
+  const blogsAtStart = await helper.blogsInDb()
+
+  const blogToView = blogsAtStart[0]
+
+  const resultBlog = await api
+    .get(`/api/blogs/${blogToView.id}`)
+    .expect(200)
+    .expect('Content-Type', /application\/json/)
+
+  expect(resultBlog.body).toEqual(blogToView)
+})
+
+test('fails with statuscode 404 if the post you want to view does not exist', async () => {
+  const validNonexistingId = await helper.validNonExistingId()
+
+  await api
+    .get(`/api/blogs/${validNonexistingId}`)
+    .expect(404)
+})
+
+test('fails with statuscode 400 if the id of the post you want to view is invalid', async () => {
+  const invalidId = '123'
+
+  await api
+    .get(`/api/blogs/${invalidId}`)
+    .expect(400)
+})
+
 test('a valid post can be added', async () => {
   const newBlog = {
     title: 'Canonical string reduction',
