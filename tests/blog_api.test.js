@@ -108,6 +108,44 @@ test('fails with statuscode 400 if the requeted id is malformatted', async () =>
   expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length)
 })
 
+test('a valid post can be updated', async () => {
+  const blogsAtStart = await helper.blogsInDb()
+  const blogToUpdate = blogsAtStart[0]
+
+  const updatedBlog = {
+    title: blogToUpdate.title,
+    author: blogToUpdate.author,
+    url: blogToUpdate.url,
+    likes: 2
+  }
+
+  const response = await api
+    .put(`/api/blogs/${blogToUpdate.id}`)
+    .send(updatedBlog)
+
+  expect(response.body.likes).toBe(updatedBlog.likes)
+  expect(response.body.likes).not.toBe(blogToUpdate.likes)
+})
+
+test('fails with statuscode 400 if the title and url are missing from the request', async () => {
+  const blogsAtStart = await helper.blogsInDb()
+  const blogToUpdate = blogsAtStart[0]
+
+  const updatedBlog = {
+    title: blogToUpdate.title,
+    author: blogToUpdate.author,
+    likes: 2
+  }
+
+  await api
+    .put(`/api/blogs/${blogToUpdate.id}`)
+    .send(updatedBlog)
+    .expect(400)
+
+  const blogAtEnd = await api.get(`/api/blogs/${blogToUpdate.id}`)
+  expect(blogAtEnd.body).toEqual(blogsAtStart[0])
+})
+
 afterAll(() => {
   mongoose.connection.close()
 })
