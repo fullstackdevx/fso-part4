@@ -2,14 +2,21 @@ const mongoose = require('mongoose')
 const supertest = require('supertest')
 const app = require('../app')
 const api = supertest(app)
+const bcrypt = require('bcrypt')
 const Blog = require('../models/blog')
+const User = require('../models/user')
 const helper = require('./test_helper')
 
 beforeEach(async () => {
   await Blog.deleteMany({})
+  await User.deleteMany({})
+
+  const passwordHash = await bcrypt.hash('sekret', 10)
+  const user = new User({ username: 'root', passwordHash })
+  const { id: userId } = await user.save()
 
   for (const blog of helper.initialBlogs) {
-    const blogObject = new Blog(blog)
+    const blogObject = new Blog({ ...blog, user: userId })
     await blogObject.save()
   }
 })
@@ -70,14 +77,17 @@ describe('viewing a specific post', () => {
 
 describe('addition of a new post', () => {
   test('succeeds with valid data', async () => {
+    const usersAtStart = await helper.usersInDb()
+
     const newBlog = {
       title: 'Canonical string reduction',
       author: 'Edsger W. Dijkstra',
       url: 'http://www.cs.utexas.edu/~EWD/transcriptions/EWD08xx/EWD808.html',
-      likes: 12
+      likes: 12,
+      userId: usersAtStart[0].id
     }
 
-    await api
+    const responseBlog = await api
       .post('/api/blogs')
       .send(newBlog)
       .expect(201)
@@ -88,13 +98,23 @@ describe('addition of a new post', () => {
 
     expect(response.body).toHaveLength(helper.initialBlogs.length + 1)
     expect(titles).toContain(newBlog.title)
+
+    // testing user
+    const responseUser = await api.get(`/api/users/${responseBlog.body.user}`)
+    expect(responseUser.body.posts).toHaveLength(usersAtStart[0].posts.length + 1)
+
+    const userPosts = responseUser.body.posts.map(post => post.id)
+    expect(userPosts).toContain(responseBlog.body.id)
   })
 
   test('missing likes will default to zero', async () => {
+    const usersAtStart = await helper.usersInDb()
+
     const newBlog = {
       title: 'TDD harms architecture',
       author: 'Robert C. Martin',
-      url: 'http://blog.cleancoder.com/uncle-bob/2017/03/03/TDD-Harms-Architecture.html'
+      url: 'http://blog.cleancoder.com/uncle-bob/2017/03/03/TDD-Harms-Architecture.html',
+      userId: usersAtStart[0].id
     }
 
     const response = await api.post('/api/blogs').send(newBlog)
@@ -102,8 +122,9 @@ describe('addition of a new post', () => {
   })
 
   test('fails with status code 400 if data invalid', async () => {
-    const newBlog = { author: 'Robert C. Martin' }
+    const usersAtStart = await helper.usersInDb()
 
+    const newBlog = { author: 'Robert C. Martin', userId: usersAtStart[0].id }
     await api
       .post('/api/blogs')
       .send(newBlog)
