@@ -12,14 +12,22 @@ beforeEach(async () => {
   await Blog.deleteMany({})
   await User.deleteMany({})
 
+  // Create the user
   const passwordHash = await bcrypt.hash('sekret', 10)
   const user = new User({ username: 'root', passwordHash })
   const { id: userId } = await user.save()
 
-  for (const blog of helper.initialBlogs) {
-    const blogObject = new Blog({ ...blog, user: userId })
-    await blogObject.save()
-  }
+  // Create the blogs and assign the created user id
+  const postObjects = helper.initialBlogs
+    .map(post => new Blog({ ...post, user: userId }))
+  const promiseArray = postObjects.map(post => post.save())
+  const results = await Promise.all(promiseArray)
+
+  // Update the user with the created posts ids
+  const blogIds = results.map(blog => blog.id)
+  user.posts = user.posts.concat(blogIds)
+
+  await user.save()
 })
 
 describe('when there is initially some post saved', () => {
@@ -222,12 +230,21 @@ describe('update of a post', () => {
 })
 
 describe('deletion of a post', () => {
-  test('succeeds with status code 204 if id is valid', async () => {
+  test('succeeds with status code 204 if id is valid and if the user is the same who added the post', async () => {
     const blogsAtStart = await helper.blogsInDb()
     const blogToDelete = blogsAtStart[0]
 
+    // token creation
+    const usersAtStart = await helper.usersInDb()
+    const userForToken = {
+      username: usersAtStart[0].username,
+      id: usersAtStart[0].id
+    }
+    const token = jwt.sign(userForToken, process.env.SECRET)
+
     await api
       .delete(`/api/blogs/${blogToDelete.id}`)
+      .set('Authorization', `bearer ${token}`)
       .expect(204)
 
     const blogsAtEnd = await helper.blogsInDb()
@@ -235,6 +252,41 @@ describe('deletion of a post', () => {
 
     const titles = blogsAtEnd.map(blog => blog.title)
     expect(titles).not.toContain(blogToDelete.title)
+
+    // Check that user does not have the id of the post
+    const user = await User.findById(usersAtStart[0].id)
+    const postIds = user.posts.map(id => id.toString())
+    expect(postIds).not.toContain(blogToDelete.id.toString())
+  })
+
+  test('Fails with status code 400 if a blog if the post does not belong to the user', async () => {
+    const blogsAtStart = await helper.blogsInDb()
+    const blogToDelete = blogsAtStart[0]
+
+    // Create a new user
+    const passwordHash = await bcrypt.hash('pass', 10)
+    const user = new User({ username: 'mluukkai', passwordHash })
+    const newUser = await user.save()
+
+    // token creation
+    const userForToken = {
+      username: newUser.username,
+      id: newUser.id
+    }
+    const token = jwt.sign(userForToken, process.env.SECRET)
+
+    await api
+      .delete(`/api/blogs/${blogToDelete.id}`)
+      .set('Authorization', `bearer ${token}`)
+      .expect(400)
+
+    const blogsAtEnd = await helper.blogsInDb()
+    expect(blogsAtEnd).toHaveLength(blogsAtStart.length)
+
+    // Check if user has the id of the post
+    const userCreator = await User.findById(blogToDelete.user.id)
+    const postIds = userCreator.posts.map(id => id.toString())
+    expect(postIds).toContain(blogToDelete.id.toString())
   })
 })
 

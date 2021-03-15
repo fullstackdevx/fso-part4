@@ -47,8 +47,26 @@ blogsRouter.post('/', async (request, response) => {
 
 blogsRouter.delete('/:id', async (request, response) => {
   const { id } = request.params
+  const { token } = request
+
+  const decodedToken = await jwt.verify(token, config.SECRET)
+  if (!token || !decodedToken) {
+    return response.status(401).json({ error: 'token missing or invalid' })
+  }
+
+  const post = await Blog.findById(id)
+
+  if (post.user.toString() !== decodedToken.id.toString()) {
+    return response.status(400).json({ error: "Deletion failed. The post doesn't belong to the specified user." })
+  }
 
   await Blog.findByIdAndRemove(id)
+
+  // remove the post in the user
+  const user = await User.findById(decodedToken.id)
+  user.posts = user.posts.filter(postId => postId.toString() !== id)
+  await user.save()
+
   response.status(204).end()
 })
 
