@@ -1,3 +1,4 @@
+const jwt = require('jsonwebtoken')
 const mongoose = require('mongoose')
 const supertest = require('supertest')
 const app = require('../app')
@@ -79,16 +80,23 @@ describe('addition of a new post', () => {
   test('succeeds with valid data', async () => {
     const usersAtStart = await helper.usersInDb()
 
+    // token creation
+    const userForToken = {
+      username: usersAtStart[0].username,
+      id: usersAtStart[0].id
+    }
+    const token = jwt.sign(userForToken, process.env.SECRET)
+
     const newBlog = {
       title: 'Canonical string reduction',
       author: 'Edsger W. Dijkstra',
       url: 'http://www.cs.utexas.edu/~EWD/transcriptions/EWD08xx/EWD808.html',
-      likes: 12,
-      userId: usersAtStart[0].id
+      likes: 12
     }
 
     const responseBlog = await api
       .post('/api/blogs')
+      .set('Authorization', `bearer ${token}`)
       .send(newBlog)
       .expect(201)
       .expect('Content-Type', /application\/json/)
@@ -99,7 +107,7 @@ describe('addition of a new post', () => {
     expect(response.body).toHaveLength(helper.initialBlogs.length + 1)
     expect(titles).toContain(newBlog.title)
 
-    // testing user
+    // testing if user has the new post
     const responseUser = await api.get(`/api/users/${responseBlog.body.user}`)
     expect(responseUser.body.posts).toHaveLength(usersAtStart[0].posts.length + 1)
 
@@ -107,26 +115,63 @@ describe('addition of a new post', () => {
     expect(userPosts).toContain(responseBlog.body.id)
   })
 
+  test('fails with status code 401 and proper message if token is not provided', async () => {
+    const newBlog = {
+      title: 'Canonical string reduction',
+      author: 'Edsger W. Dijkstra',
+      url: 'http://www.cs.utexas.edu/~EWD/transcriptions/EWD08xx/EWD808.html',
+      likes: 12
+    }
+
+    const response = await api
+      .post('/api/blogs')
+      .send(newBlog)
+      .expect(401)
+
+    expect(response.body.error).toContain('invalid token')
+
+    const { body: postsAtEnd } = await api.get('/api/blogs')
+    expect(postsAtEnd).toHaveLength(helper.initialBlogs.length)
+  })
+
   test('missing likes will default to zero', async () => {
     const usersAtStart = await helper.usersInDb()
+
+    // token creation
+    const userForToken = {
+      username: usersAtStart[0].username,
+      id: usersAtStart[0].id
+    }
+    const token = jwt.sign(userForToken, process.env.SECRET)
 
     const newBlog = {
       title: 'TDD harms architecture',
       author: 'Robert C. Martin',
-      url: 'http://blog.cleancoder.com/uncle-bob/2017/03/03/TDD-Harms-Architecture.html',
-      userId: usersAtStart[0].id
+      url: 'http://blog.cleancoder.com/uncle-bob/2017/03/03/TDD-Harms-Architecture.html'
     }
 
-    const response = await api.post('/api/blogs').send(newBlog)
+    const response = await api
+      .post('/api/blogs')
+      .set('Authorization', `bearer ${token}`)
+      .send(newBlog)
+
     expect(response.body.likes).toBe(0)
   })
 
   test('fails with status code 400 if data invalid', async () => {
     const usersAtStart = await helper.usersInDb()
 
-    const newBlog = { author: 'Robert C. Martin', userId: usersAtStart[0].id }
+    // token creation
+    const userForToken = {
+      username: usersAtStart[0].username,
+      id: usersAtStart[0].id
+    }
+    const token = jwt.sign(userForToken, process.env.SECRET)
+
+    const newBlog = { author: 'Robert C. Martin' }
     await api
       .post('/api/blogs')
+      .set('Authorization', `bearer ${token}`)
       .send(newBlog)
       .expect(400)
 
