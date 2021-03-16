@@ -1,5 +1,3 @@
-const config = require('../utils/config')
-const jwt = require('jsonwebtoken')
 const mongoose = require('mongoose')
 const supertest = require('supertest')
 const app = require('../app')
@@ -88,13 +86,9 @@ describe('viewing a specific post', () => {
 describe('addition of a new post', () => {
   test('succeeds with valid data', async () => {
     const usersAtStart = await helper.usersInDb()
+    const userAtStart = usersAtStart[0]
 
-    // token creation
-    const userForToken = {
-      username: usersAtStart[0].username,
-      id: usersAtStart[0].id
-    }
-    const token = jwt.sign(userForToken, config.SECRET)
+    const token = helper.generateTokenFrom(userAtStart)
 
     const newBlog = {
       title: 'Canonical string reduction',
@@ -118,7 +112,7 @@ describe('addition of a new post', () => {
 
     // testing if user has the new post
     const responseUser = await api.get(`/api/users/${responseBlog.body.user}`)
-    expect(responseUser.body.posts).toHaveLength(usersAtStart[0].posts.length + 1)
+    expect(responseUser.body.posts).toHaveLength(userAtStart.posts.length + 1)
 
     const userPosts = responseUser.body.posts.map(post => post.id)
     expect(userPosts).toContain(responseBlog.body.id)
@@ -145,13 +139,9 @@ describe('addition of a new post', () => {
 
   test('missing likes will default to zero', async () => {
     const usersAtStart = await helper.usersInDb()
+    const userAtStart = usersAtStart[0]
 
-    // token creation
-    const userForToken = {
-      username: usersAtStart[0].username,
-      id: usersAtStart[0].id
-    }
-    const token = jwt.sign(userForToken, config.SECRET)
+    const token = helper.generateTokenFrom(userAtStart)
 
     const newBlog = {
       title: 'TDD harms architecture',
@@ -169,13 +159,9 @@ describe('addition of a new post', () => {
 
   test('fails with status code 400 if data invalid', async () => {
     const usersAtStart = await helper.usersInDb()
+    const userAtStart = usersAtStart[0]
 
-    // token creation
-    const userForToken = {
-      username: usersAtStart[0].username,
-      id: usersAtStart[0].id
-    }
-    const token = jwt.sign(userForToken, config.SECRET)
+    const token = helper.generateTokenFrom(userAtStart)
 
     const newBlog = { author: 'Robert C. Martin' }
     await api
@@ -235,13 +221,10 @@ describe('deletion of a post', () => {
     const blogsAtStart = await helper.blogsInDb()
     const blogToDelete = blogsAtStart[0]
 
-    // token creation
     const usersAtStart = await helper.usersInDb()
-    const userForToken = {
-      username: usersAtStart[0].username,
-      id: usersAtStart[0].id
-    }
-    const token = jwt.sign(userForToken, config.SECRET)
+    const userAtStart = usersAtStart[0]
+
+    const token = helper.generateTokenFrom(userAtStart)
 
     await api
       .delete(`/api/blogs/${blogToDelete.id}`)
@@ -255,7 +238,7 @@ describe('deletion of a post', () => {
     expect(titles).not.toContain(blogToDelete.title)
 
     // Check that user does not have the id of the post
-    const user = await User.findById(usersAtStart[0].id)
+    const user = await User.findById(userAtStart.id)
     const postIds = user.posts.map(id => id.toString())
     expect(postIds).not.toContain(blogToDelete.id.toString())
   })
@@ -269,12 +252,7 @@ describe('deletion of a post', () => {
     const user = new User({ username: 'mluukkai', passwordHash })
     const newUser = await user.save()
 
-    // token creation
-    const userForToken = {
-      username: newUser.username,
-      id: newUser.id
-    }
-    const token = jwt.sign(userForToken, config.SECRET)
+    const token = helper.generateTokenFrom(newUser)
 
     await api
       .delete(`/api/blogs/${blogToDelete.id}`)
