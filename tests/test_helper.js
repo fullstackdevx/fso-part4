@@ -24,6 +24,12 @@ const blogsInDb = async () => {
   return blogs.map(blog => blog.toJSON())
 }
 
+const blogInDb = async (id) => {
+  const blog = await Blog.findById(id)
+    .populate('user', { username: 1, name: 1 })
+  return blog.toJSON()
+}
+
 const validNonExistingId = async () => {
   const blog = new Blog({ title: 'willremovethissoon', url: 'willremovethissoon' })
   await blog.save()
@@ -34,7 +40,14 @@ const validNonExistingId = async () => {
 
 const usersInDb = async () => {
   const users = await User.find({})
+    .populate('posts', { title: 1, author: 1, url: 1 })
   return users.map(u => u.toJSON())
+}
+
+const userInDb = async (id) => {
+  const user = await User.findById(id)
+    .populate('posts', { title: 1, author: 1, url: 1 })
+  return user.toJSON()
 }
 
 const generateTokenFrom = ({ username, id }) => {
@@ -45,4 +58,12 @@ const generateTokenFrom = ({ username, id }) => {
   return jwt.sign(userForToken, config.SECRET)
 }
 
-module.exports = { initialBlogs, blogsInDb, validNonExistingId, usersInDb, generateTokenFrom }
+module.exports = {
+  initialBlogs,
+  blogsInDb,
+  blogInDb,
+  validNonExistingId,
+  usersInDb,
+  userInDb,
+  generateTokenFrom
+}

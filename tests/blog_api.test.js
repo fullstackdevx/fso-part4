@@ -97,25 +97,25 @@ describe('addition of a new post', () => {
       likes: 12
     }
 
-    const responseBlog = await api
+    const response = await api
       .post('/api/blogs')
       .set('Authorization', `bearer ${token}`)
       .send(newBlog)
       .expect(201)
       .expect('Content-Type', /application\/json/)
 
-    const response = await api.get('/api/blogs')
-    const titles = response.body.map(blog => blog.title)
+    const blogs = await Blog.find({})
+    expect(blogs).toHaveLength(helper.initialBlogs.length + 1)
 
-    expect(response.body).toHaveLength(helper.initialBlogs.length + 1)
+    const titles = blogs.map(blog => blog.title)
     expect(titles).toContain(newBlog.title)
 
     // testing if user has the new post
-    const responseUser = await api.get(`/api/users/${responseBlog.body.user}`)
-    expect(responseUser.body.posts).toHaveLength(userAtStart.posts.length + 1)
+    const userAtEnd = await helper.userInDb(response.body.user)
+    expect(userAtEnd.posts).toHaveLength(userAtStart.posts.length + 1)
 
-    const userPosts = responseUser.body.posts.map(post => post.id)
-    expect(userPosts).toContain(responseBlog.body.id)
+    const userPostIds = userAtEnd.posts.map(post => post.id.toString())
+    expect(userPostIds).toContain(response.body.id)
   })
 
   test('fails with status code 401 and proper message if token is not provided', async () => {
@@ -133,7 +133,7 @@ describe('addition of a new post', () => {
 
     expect(response.body.error).toContain('invalid token')
 
-    const { body: postsAtEnd } = await api.get('/api/blogs')
+    const postsAtEnd = await helper.blogsInDb()
     expect(postsAtEnd).toHaveLength(helper.initialBlogs.length)
   })
 
@@ -171,7 +171,6 @@ describe('addition of a new post', () => {
       .expect(400)
 
     const blogAtEnd = await helper.blogsInDb()
-
     expect(blogAtEnd).toHaveLength(helper.initialBlogs.length)
   })
 })
@@ -198,21 +197,21 @@ describe('update of a post', () => {
 
   test('fails with status code 400 if data invalid', async () => {
     const blogsAtStart = await helper.blogsInDb()
-    const blogToUpdate = blogsAtStart[0]
+    const blogAtStart = blogsAtStart[0]
 
-    const updatedBlog = {
-      title: blogToUpdate.title,
-      author: blogToUpdate.author,
+    const blogToUpdate = {
+      title: blogAtStart.title,
+      author: blogAtStart.author,
       likes: 2
     }
 
     await api
       .put(`/api/blogs/${blogToUpdate.id}`)
-      .send(updatedBlog)
+      .send(blogToUpdate)
       .expect(400)
 
-    const blogAtEnd = await api.get(`/api/blogs/${blogToUpdate.id}`)
-    expect(blogAtEnd.body).toEqual(blogsAtStart[0])
+    const blogAtEnd = await helper.blogInDb(blogAtStart.id)
+    expect(blogAtStart).toEqual(blogAtEnd)
   })
 })
 
@@ -238,9 +237,9 @@ describe('deletion of a post', () => {
     expect(titles).not.toContain(blogToDelete.title)
 
     // Check that user does not have the id of the post
-    const user = await User.findById(userAtStart.id)
-    const postIds = user.posts.map(id => id.toString())
-    expect(postIds).not.toContain(blogToDelete.id.toString())
+    const user = await helper.userInDb(userAtStart.id)
+    const userPostIds = user.posts.map(post => post.id.toString())
+    expect(userPostIds).not.toContain(blogToDelete.id.toString())
   })
 
   test('Fails with status code 400 if a blog if the post does not belong to the user', async () => {
@@ -263,9 +262,9 @@ describe('deletion of a post', () => {
     expect(blogsAtEnd).toHaveLength(blogsAtStart.length)
 
     // Check if user has the id of the post
-    const userCreator = await User.findById(blogToDelete.user.id)
-    const postIds = userCreator.posts.map(id => id.toString())
-    expect(postIds).toContain(blogToDelete.id.toString())
+    const userCreator = await helper.userInDb(blogToDelete.user.id)
+    const userPostIds = userCreator.posts.map(post => post.id.toString())
+    expect(userPostIds).toContain(blogToDelete.id.toString())
   })
 })
 
