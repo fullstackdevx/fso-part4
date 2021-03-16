@@ -1,3 +1,4 @@
+const config = require('../utils/config')
 const jwt = require('jsonwebtoken')
 const mongoose = require('mongoose')
 const supertest = require('supertest')
@@ -93,7 +94,7 @@ describe('addition of a new post', () => {
       username: usersAtStart[0].username,
       id: usersAtStart[0].id
     }
-    const token = jwt.sign(userForToken, process.env.SECRET)
+    const token = jwt.sign(userForToken, config.SECRET)
 
     const newBlog = {
       title: 'Canonical string reduction',
@@ -150,7 +151,7 @@ describe('addition of a new post', () => {
       username: usersAtStart[0].username,
       id: usersAtStart[0].id
     }
-    const token = jwt.sign(userForToken, process.env.SECRET)
+    const token = jwt.sign(userForToken, config.SECRET)
 
     const newBlog = {
       title: 'TDD harms architecture',
@@ -174,7 +175,7 @@ describe('addition of a new post', () => {
       username: usersAtStart[0].username,
       id: usersAtStart[0].id
     }
-    const token = jwt.sign(userForToken, process.env.SECRET)
+    const token = jwt.sign(userForToken, config.SECRET)
 
     const newBlog = { author: 'Robert C. Martin' }
     await api
@@ -240,7 +241,7 @@ describe('deletion of a post', () => {
       username: usersAtStart[0].username,
       id: usersAtStart[0].id
     }
-    const token = jwt.sign(userForToken, process.env.SECRET)
+    const token = jwt.sign(userForToken, config.SECRET)
 
     await api
       .delete(`/api/blogs/${blogToDelete.id}`)
@@ -273,7 +274,7 @@ describe('deletion of a post', () => {
       username: newUser.username,
       id: newUser.id
     }
-    const token = jwt.sign(userForToken, process.env.SECRET)
+    const token = jwt.sign(userForToken, config.SECRET)
 
     await api
       .delete(`/api/blogs/${blogToDelete.id}`)
