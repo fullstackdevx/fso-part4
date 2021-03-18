@@ -18,15 +18,11 @@ const favoriteBlog = (blogs) => {
 }
 
 const mostBlogs = (blogs) => {
-  const postsByAuthor = _.groupBy(blogs, 'author')
-
-  const likesByAuthor = _.map(postsByAuthor, (posts, author) => {
-    return { author, likes: _.reduce(posts, (acc, post) => acc + post.likes, 0) }
-  })
-
-  const result = _.reduce(likesByAuthor, (mostBlog, currentBlog) => {
-    return mostBlog.likes > currentBlog.likes ? mostBlog : currentBlog
-  }, {})
+  const result = _.chain(blogs)
+    .groupBy('author')
+    .map((posts, author) => ({ author, likes: _.reduce(posts, (acc, post) => acc + post.likes, 0) }))
+    .reduce((mostBlog, currentBlog) => mostBlog.likes > currentBlog.likes ? mostBlog : currentBlog, {})
+    .value()
 
   return result
 }
