@@ -20,7 +20,7 @@ const favoriteBlog = (blogs) => {
 const mostBlogs = (blogs) => {
   const result = _.chain(blogs)
     .groupBy('author')
-    .map((posts, author) => ({ author, likes: _.reduce(posts, (acc, post) => acc + post.likes, 0) }))
+    .map((posts, author) => ({ author, likes: _.sumBy(posts, 'likes', 0) }))
     .reduce((mostBlog, currentBlog) => mostBlog.likes > currentBlog.likes ? mostBlog : currentBlog, {})
     .value()
 
