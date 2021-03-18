@@ -174,7 +174,7 @@ describe('Favorite blog', () => {
   })
 })
 
-describe('mostBlogs', () => {
+describe('Most likes', () => {
   const listWithBlogs = [
     {
       _id: '5a422a851b54a676234d17f7',
@@ -225,7 +225,7 @@ describe('mostBlogs', () => {
       __v: 0
     }
   ]
-  test('mostBlogs', () => {
-    expect(listHelper.mostBlogs(listWithBlogs)).toEqual({ author: 'Edsger W. Dijkstra', likes: 17 })
+  test('returns the author whose blog posts have the largest amount of likes, and the total number of likes', () => {
+    expect(listHelper.mostLikes(listWithBlogs)).toEqual({ author: 'Edsger W. Dijkstra', likes: 17 })
   })
 })
