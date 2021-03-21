@@ -233,6 +233,24 @@ describe('Most blogs', () => {
     }
     expect(listHelper.mostBlogs(listWithBlogs)).toEqual(expectedResult)
   })
+
+  test('when list has only one author returns the author and the number of his blogs', () => {
+    const [,,, ...roberCMartingsBlogs] = listWithBlogs
+
+    const expectedResult = {
+      author: 'Robert C. Martin',
+      blogs: 3
+    }
+    expect(listHelper.mostBlogs(roberCMartingsBlogs)).toEqual(expectedResult)
+  })
+
+  test('of no existing list returns undefined', () => {
+    expect(listHelper.mostBlogs()).toBe(undefined)
+  })
+
+  test('of empty list returns empty object', () => {
+    expect(listHelper.mostBlogs([])).toEqual({})
+  })
 })
 
 describe('Most likes', () => {
@@ -286,7 +304,26 @@ describe('Most likes', () => {
       __v: 0
     }
   ]
+
   test('returns the author whose blog posts have the largest amount of likes, and the total number of likes', () => {
     expect(listHelper.mostLikes(listWithBlogs)).toEqual({ author: 'Edsger W. Dijkstra', likes: 17 })
+  })
+
+  test('when list has only one author returns the author and the total number of his likes', () => {
+    const [,,, ...roberCMartingsBlogs] = listWithBlogs
+    const expectedResult = {
+      author: 'Robert C. Martin',
+      likes: 12
+    }
+
+    expect(listHelper.mostLikes(roberCMartingsBlogs)).toEqual(expectedResult)
+  })
+
+  test('of no existing list returns undefined', () => {
+    expect(listHelper.mostLikes()).toBe(undefined)
+  })
+
+  test('of empty list returns empty object', () => {
+    expect(listHelper.mostLikes([])).toEqual({})
   })
 })

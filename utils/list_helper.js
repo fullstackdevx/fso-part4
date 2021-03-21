@@ -18,6 +18,9 @@ const favoriteBlog = (blogs) => {
 }
 
 const mostBlogs = (blogs) => {
+  if (typeof blogs === 'undefined') return
+  if (blogs.length === 0) return {}
+
   const result = _.chain(blogs)
     .groupBy('author')
     .map((posts, author) => ({ author, blogs: posts.length }))
@@ -28,6 +31,9 @@ const mostBlogs = (blogs) => {
 }
 
 const mostLikes = (blogs) => {
+  if (typeof blogs === 'undefined') return
+  if (blogs.length === 0) return {}
+
   const result = _.chain(blogs)
     .groupBy('author')
     .map((posts, author) => ({ author, likes: _.sumBy(posts, 'likes', 0) }))
