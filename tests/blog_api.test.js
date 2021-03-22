@@ -242,7 +242,7 @@ describe('deletion of a post', () => {
     expect(userPostIds).not.toContain(blogToDelete.id.toString())
   })
 
-  test('Fails with status code 400 if a blog if the post does not belong to the user', async () => {
+  test('Fails with status code 403 if the post does not belong to the user', async () => {
     const blogsAtStart = await helper.blogsInDb()
     const blogToDelete = blogsAtStart[0]
 
@@ -256,7 +256,7 @@ describe('deletion of a post', () => {
     await api
       .delete(`/api/blogs/${blogToDelete.id}`)
       .set('Authorization', `bearer ${token}`)
-      .expect(400)
+      .expect(403)
 
     const blogsAtEnd = await helper.blogsInDb()
     expect(blogsAtEnd).toHaveLength(blogsAtStart.length)
